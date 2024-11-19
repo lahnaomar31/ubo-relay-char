@@ -6,7 +6,7 @@ import RoomList from './components/RoomList';
 
 const Messages = () => {
   const [users, setUsers] = useState([]); // Liste des utilisateurs
-  const [rooms] = useState(['General', 'News', 'Random']); // Liste des salons
+  const [rooms, setRooms] = useState([]); // Liste des salons
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(''); // Contenu du message
   const navigate = useNavigate();
@@ -40,12 +40,45 @@ const Messages = () => {
       }
     };
 
+    //Fetch les salons
+    const fetchRooms = async () => {
+      try {
+        const token = sessionStorage.getItem('token');
+        if (!token) {
+          setError('Vous devez être connecté pour voir les salons.');
+          return;
+        }
+    
+        const response = await fetch('/api/rooms', {
+          headers: {
+            Authorization: `Bearer ${token}`, // Utilisez des backticks pour inclure le token
+            'Content-Type': 'application/json',
+          },
+        });
+    
+        if (response.ok) {
+          const data = await response.json();
+          setRooms(data); // Mettre à jour la liste des salons
+        } else {
+          throw new Error('Erreur lors de la récupération des salons');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        setError('Impossible de charger les salons.');
+      }
+    };
+
     fetchUsers();
+    fetchRooms();
   }, []);
 
   const handleUserSelect = (id) => {
     navigate(`/messages/user/${id}`); // Naviguer vers la conversation de l'utilisateur
   };
+
+  const handleRoomSelect = (id) =>{
+    navigate(`/messages/room/${id}`);
+  }
 
   const handleSendMessage = () => {
     // Ajouter votre logique pour envoyer un message global ou une autre action
@@ -67,7 +100,11 @@ const Messages = () => {
         <Divider sx={{ my: 2 }} />
 
         <Typography variant="h6">Salons</Typography>
-        <RoomList rooms={rooms} />
+        {error ? (
+          <Typography color="error">{error}</Typography>
+        ) : (
+          <RoomList rooms={rooms} onRoomSelect={handleRoomSelect} />
+        )}
       </Box>
 
       {/* Zone de chat et boutons */}
