@@ -4,6 +4,7 @@ import { Login } from './user/Login';
 import { Register } from './user/Register';
 import Messages from './Messages';
 import Conversation from './Conversation';
+import Header from './Header';
 import RoomConversation from './RoomConversation';
 import { Client as PushNotifications } from "@pusher/push-notifications-web";
 import React, { useEffect } from "react";
@@ -46,15 +47,18 @@ function App() {
   }, []); // Exécute ce code une seule fois au chargement de l'application
 
   return (
-    <Routes>
-      <Route path="/" element={<Login />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/messages" element={<Messages />}>
-        <Route path="user/:id" element={<Conversation />} />
-        <Route path="/messages/room/:id" element={<RoomConversation />} />
-      </Route>
-    </Routes>
+    <>
+      <Header /> {/* Ajout du composant Header */}
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/messages" element={<Messages />}>
+          <Route path="user/:id" element={<Conversation />} />
+          <Route path="/messages/room/:id" element={<RoomConversation />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
 
