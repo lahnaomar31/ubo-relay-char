@@ -1,15 +1,17 @@
 import './App.css';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom'; // Import useLocation
 import { Login } from './user/Login';
 import { Register } from './user/Register';
 import Messages from './Messages';
 import Conversation from './Conversation';
-import Header from './Header';
+import Header from './Header'; // Import Header
 import RoomConversation from './RoomConversation';
 import { Client as PushNotifications } from "@pusher/push-notifications-web";
 import React, { useEffect } from "react";
 
 function App() {
+  const location = useLocation(); // Get the current route
+
   useEffect(() => {
     if (!("Notification" in window)) {
       console.error("Les notifications ne sont pas supportées par ce navigateur.");
@@ -33,22 +35,24 @@ function App() {
         console.error("Erreur lors de la demande de permission :", error)
       );
 
-    // Instanciation de Pusher Beams pour les notifications
     const beamsClient = new PushNotifications({
-      instanceId: "bb7bb705-9890-428e-95ac-c04998af39da", // Remplacez par votre `Instance ID` spécifique
+      instanceId: "bb7bb705-9890-428e-95ac-c04998af39da", // Replace with your specific Instance ID
     });
 
-    // Démarrer le client Beams et s'abonner à un "Device Interest"
     beamsClient
       .start()
-      .then(() => beamsClient.addDeviceInterest("hello")) // Inscription à l'intérêt 'hello'
+      .then(() => beamsClient.addDeviceInterest("hello"))
       .then(() => console.log("Successfully registered and subscribed!"))
       .catch(console.error);
-  }, []); // Exécute ce code une seule fois au chargement de l'application
+  }, []);
+
+  // Define routes where the Header should not be displayed
+  const noHeaderRoutes = ["/login", "/register"];
 
   return (
     <>
-      <Header /> {/* Ajout du composant Header */}
+      {/* Conditionally render Header based on the route */}
+      {!noHeaderRoutes.includes(location.pathname) && <Header />}
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />

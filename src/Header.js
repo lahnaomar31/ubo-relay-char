@@ -4,12 +4,11 @@ import { Button } from '@mui/material';
 
 const Header = () => {
   const navigate = useNavigate();
-  const user = sessionStorage.getItem('user'); // Vérifie si un utilisateur est connecté
 
   const handleLogout = () => {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
-    navigate('/login'); // Redirection vers la page de connexion
+    navigate('/login'); // Redirect to the login page
   };
 
   return (
@@ -23,17 +22,15 @@ const Header = () => {
         color: '#fff',
       }}
     >
-      <h2>Relay chat app</h2>
-      {user && (
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={handleLogout}
-          style={{ backgroundColor: '#f44336' }}
-        >
-          DÉCONNEXION
-        </Button>
-      )}
+      <h2>Relay Chat App</h2>
+      <Button
+        variant="contained"
+        color="secondary"
+        onClick={handleLogout} // No reliance on onLogout prop
+        style={{ backgroundColor: '#f44336' }}
+      >
+        DÉCONNEXION
+      </Button>
     </div>
   );
 };
