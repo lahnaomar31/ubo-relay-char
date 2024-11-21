@@ -8,7 +8,7 @@ const Header = () => {
   const handleLogout = () => {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
-    navigate('/login'); // Redirect to the login page
+    navigate('/login'); // Rediriger vers la page de connexion
   };
 
   return (
@@ -20,14 +20,23 @@ const Header = () => {
         padding: '10px 20px',
         backgroundColor: '#3f51b5',
         color: '#fff',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
       }}
     >
-      <h2>Relay Chat App</h2>
+      <h2 style={{ fontFamily: 'Roboto, sans-serif', fontSize: '1.5rem' }}>
+        Relay Chat App
+      </h2>
       <Button
         variant="contained"
-        color="secondary"
-        onClick={handleLogout} // No reliance on onLogout prop
-        style={{ backgroundColor: '#f44336' }}
+        onClick={handleLogout}
+        sx={{
+          backgroundColor: '#f44336',
+          color: '#fff',
+          fontWeight: 'bold',
+          ':hover': {
+            backgroundColor: '#d32f2f',
+          },
+        }}
       >
         DÉCONNEXION
       </Button>

@@ -3,19 +3,19 @@ import { useParams } from 'react-router-dom';
 import { Box, Typography, TextField, Button } from '@mui/material';
 
 const Conversation = () => {
-  const { id } = useParams(); // Récupère l'ID de la conversation
+  const { id } = useParams(); // ID de la conversation
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const currentUser = JSON.parse(sessionStorage.getItem('user')); // Récupère l'utilisateur connecté
-  const token = sessionStorage.getItem('token'); // Récupère le token d'authentification
+  const currentUser = JSON.parse(sessionStorage.getItem('user')); // Utilisateur connecté
+  const token = sessionStorage.getItem('token'); // Token d'authentification
 
   const messagesEndRef = useRef(null); // Référence pour autoscroll
 
-  // Réinitialiser l'état des messages et de chargement lors du changement d'ID
+  // Réinitialisation à chaque changement d'ID
   useEffect(() => {
-    setMessages([]); // Effacer les anciens messages
-    setLoading(true); // Réinitialiser l'état de chargement
+    setMessages([]);
+    setLoading(true);
   }, [id]);
 
   useEffect(() => {
@@ -29,8 +29,6 @@ const Conversation = () => {
 
         if (response.ok) {
           const data = await response.json();
-
-          // Assurez-vous que `timestamp` est bien converti en objet `Date`
           const formattedMessages = data.map((msg) => ({
             text: msg.text || '',
             sender: msg.sender || 'unknown',
@@ -50,12 +48,10 @@ const Conversation = () => {
     fetchMessages();
   }, [id, token]);
 
-  // Fonction pour scroller automatiquement vers le bas
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Scroller vers le bas à chaque changement de messages
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -78,14 +74,11 @@ const Conversation = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Message envoyé avec succès :', data.message);
-
-        // Ajoutez le nouveau message au tableau des messages
         setMessages((prevMessages) => [
           ...prevMessages,
           {
             ...data.message,
-            timestamp: new Date(data.message.timestamp), // Assurez-vous que le nouveau message a un `timestamp` au format Date
+            timestamp: new Date(data.message.timestamp),
           },
         ]);
         setNewMessage('');
@@ -113,9 +106,11 @@ const Conversation = () => {
           flex: 1,
           overflowY: 'auto',
           padding: '16px',
-          border: '1px solid #ddd',
-          borderRadius: '4px',
+          border: '1px solid #ccc',
+          borderRadius: '10px',
           marginBottom: '16px',
+          backgroundColor: '#fafafa',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
         }}
       >
         {loading ? (
@@ -128,33 +123,42 @@ const Conversation = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems:
-                  msg.sender === currentUser?.username ? 'flex-end' : 'flex-start', // Droite pour le sender, gauche pour le receiver
+                  msg.sender === currentUser?.username ? 'flex-end' : 'flex-start',
                 marginBottom: '10px',
+                animation: 'fadeIn 0.5s ease-in',
+                '@keyframes fadeIn': {
+                  '0%': { opacity: 0, transform: 'translateY(20px)' },
+                  '100%': { opacity: 1, transform: 'translateY(0)' },
+                },
               }}
             >
-              {/* Nom de l'utilisateur */}
               <Typography
                 variant="caption"
                 sx={{
                   fontSize: '0.75rem',
-                  color: msg.sender === currentUser?.username ? '#007bff' : '#000',
+                  color: msg.sender === currentUser?.username ? '#1976d2' : '#000',
                   marginBottom: '5px',
                 }}
               >
                 {msg.sender}
               </Typography>
 
-              {/* Message */}
               <Box
                 sx={{
                   backgroundColor:
-                    msg.sender === currentUser?.username ? '#007bff' : '#f1f1f1',
+                    msg.sender === currentUser?.username ? '#1976d2' : '#e0e0e0',
                   color: msg.sender === currentUser?.username ? '#fff' : '#000',
-                  padding: '10px',
-                  borderRadius: '10px',
-                  maxWidth: '60%',
+                  padding: '12px',
+                  borderRadius: '16px',
+                  maxWidth: '70%',
                   wordWrap: 'break-word',
                   textAlign: 'left',
+                  boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+                  transform: 'scale(1)',
+                  transition: 'transform 0.3s ease-in-out',
+                  ':hover': {
+                    transform: 'scale(1.05)',
+                  },
                 }}
               >
                 <Typography variant="body2">{msg.text}</Typography>
@@ -167,9 +171,7 @@ const Conversation = () => {
                     marginTop: '5px',
                   }}
                 >
-                  {msg.timestamp instanceof Date
-                    ? msg.timestamp.toLocaleTimeString()
-                    : new Date(msg.timestamp).toLocaleTimeString()}
+                  {msg.timestamp.toLocaleTimeString()}
                 </Typography>
               </Box>
             </Box>
@@ -177,6 +179,7 @@ const Conversation = () => {
         ) : (
           <Typography>Aucun message dans cette conversation.</Typography>
         )}
+        <div ref={messagesEndRef} />
       </Box>
 
       {/* Zone de saisie */}
@@ -190,14 +193,33 @@ const Conversation = () => {
       >
         <TextField
           fullWidth
-          placeholder="Écrivez un message..."
+          placeholder="Écrivez votre message..."
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          sx={{ marginRight: '10px' }}
+          sx={{
+            marginRight: '10px',
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: '#ccc',
+              },
+              '&:hover fieldset': {
+                borderColor: '#1976d2',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#1976d2',
+              },
+            },
+          }}
         />
         <Button
           variant="contained"
-          color="primary"
+          sx={{
+            backgroundColor: '#1976d2',
+            color: '#fff',
+            ':hover': {
+              backgroundColor: '#005bb5',
+            },
+          }}
           onClick={handleSendMessage}
         >
           Envoyer

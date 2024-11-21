@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
-import { Box, Container, TextField, Button, Typography, Divider } from '@mui/material';
+import { Box, Container, Typography, Divider } from '@mui/material';
 import UserList from './components/UserList';
 import RoomList from './components/RoomList';
 
@@ -8,11 +8,9 @@ const Messages = () => {
   const [users, setUsers] = useState([]); // Liste des utilisateurs
   const [rooms, setRooms] = useState([]); // Liste des salons
   const [error, setError] = useState(null);
-  const [message, setMessage] = useState(''); // Contenu du message
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch les utilisateurs
     const fetchUsers = async () => {
       try {
         const token = sessionStorage.getItem('token');
@@ -40,7 +38,6 @@ const Messages = () => {
       }
     };
 
-    //Fetch les salons
     const fetchRooms = async () => {
       try {
         const token = sessionStorage.getItem('token');
@@ -48,17 +45,17 @@ const Messages = () => {
           setError('Vous devez être connecté pour voir les salons.');
           return;
         }
-    
+
         const response = await fetch('/api/rooms', {
           headers: {
-            Authorization: `Bearer ${token}`, // Utilisez des backticks pour inclure le token
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
-    
+
         if (response.ok) {
           const data = await response.json();
-          setRooms(data); // Mettre à jour la liste des salons
+          setRooms(data);
         } else {
           throw new Error('Erreur lors de la récupération des salons');
         }
@@ -76,21 +73,15 @@ const Messages = () => {
     navigate(`/messages/user/${id}`); // Naviguer vers la conversation de l'utilisateur
   };
 
-  const handleRoomSelect = (id) =>{
-    navigate(`/messages/room/${id}`);
-  }
-
-  const handleSendMessage = () => {
-    // Ajouter votre logique pour envoyer un message global ou une autre action
-    console.log('Message envoyé:', message);
-    setMessage('');
+  const handleRoomSelect = (id) => {
+    navigate(`/messages/room/${id}`); // Naviguer vers la conversation du salon
   };
 
   return (
-    <Container maxWidth="lg" style={{ display: 'flex', marginTop: '20px' }}>
+    <Container maxWidth="lg" sx={{ display: 'flex', marginTop: '20px' }}>
       {/* Liste des utilisateurs et des salons */}
       <Box sx={{ width: '25%', paddingRight: 2, borderRight: '1px solid #ddd' }}>
-        <Typography variant="h6">Utilisateurs</Typography>
+        <Typography variant="h6" sx={{ marginBottom: 2 }}>Utilisateurs</Typography>
         {error ? (
           <Typography color="error">{error}</Typography>
         ) : (
@@ -99,7 +90,7 @@ const Messages = () => {
 
         <Divider sx={{ my: 2 }} />
 
-        <Typography variant="h6">Salons</Typography>
+        <Typography variant="h6" sx={{ marginBottom: 2 }}>Salons</Typography>
         {error ? (
           <Typography color="error">{error}</Typography>
         ) : (
@@ -107,26 +98,9 @@ const Messages = () => {
         )}
       </Box>
 
-      {/* Zone de chat et boutons */}
-      <Box sx={{ flex: 1, marginLeft: 2, display: 'flex', flexDirection: 'column' }}>
-        {/* Contenu principal injecté */}
+      {/* Zone de chat */}
+      <Box sx={{ flex: 1, marginLeft: 2 }}>
         <Outlet />
-
-        {/* Champ de saisie et boutons */}
-        {/* <Box sx={{ display: 'flex', padding: 2 }}>
-          <TextField
-            fullWidth
-            placeholder="Message"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-          <Button variant="contained" color="primary" sx={{ mx: 1 }}>
-            Image
-          </Button>
-          <Button variant="contained" color="primary" onClick={handleSendMessage}>
-            Envoyer
-          </Button>
-        </Box> */}
       </Box>
     </Container>
   );
