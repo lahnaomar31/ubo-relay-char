@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Box, Typography, TextField, Button } from "@mui/material";
 
@@ -9,6 +9,8 @@ const RoomConversation = () => {
   const [loading, setLoading] = useState(true);
   const currentUser = JSON.parse(sessionStorage.getItem("user")); // Utilisateur connecté
   const token = sessionStorage.getItem("token"); // Token d'authentification
+
+  const messagesEndRef = useRef(null); // Référence pour autoscroll
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -41,6 +43,16 @@ const RoomConversation = () => {
 
     fetchMessages();
   }, [id, token]); // Relance l'effet à chaque changement de `id`
+
+  // Fonction pour scroller vers le bas
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]); // Scrolle à chaque fois que les messages changent
+
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Typography, TextField, Button } from '@mui/material';
 
@@ -9,6 +9,14 @@ const Conversation = () => {
   const [loading, setLoading] = useState(true);
   const currentUser = JSON.parse(sessionStorage.getItem('user')); // Récupère l'utilisateur connecté
   const token = sessionStorage.getItem('token'); // Récupère le token d'authentification
+
+  const messagesEndRef = useRef(null); // Référence pour autoscroll
+
+  // Réinitialiser l'état des messages et de chargement lors du changement d'ID
+  useEffect(() => {
+    setMessages([]); // Effacer les anciens messages
+    setLoading(true); // Réinitialiser l'état de chargement
+  }, [id]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -41,6 +49,16 @@ const Conversation = () => {
 
     fetchMessages();
   }, [id, token]);
+
+  // Fonction pour scroller automatiquement vers le bas
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Scroller vers le bas à chaque changement de messages
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
