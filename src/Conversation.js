@@ -1,25 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { Box, Typography, TextField, Button } from '@mui/material';
+import React, { useState, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
+import { Box, Typography, TextField, Button, CircularProgress } from "@mui/material";
+import "./App.css";
 
 const Conversation = () => {
   const { id } = useParams(); // ID de la conversation
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const currentUser = JSON.parse(sessionStorage.getItem('user')); // Utilisateur connecté
-  const token = sessionStorage.getItem('token'); // Token d'authentification
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true); // Indicateur de préchargement
+  const currentUser = JSON.parse(sessionStorage.getItem("user")); // Utilisateur connecté
+  const token = sessionStorage.getItem("token"); // Token d'authentification
 
-  const messagesEndRef = useRef(null); // Référence pour autoscroll
-
-  // Réinitialisation à chaque changement d'ID
-  useEffect(() => {
-    setMessages([]);
-    setLoading(true);
-  }, [id]);
+  const messagesEndRef = useRef(null); // Référence pour auto-scroll
 
   useEffect(() => {
     const fetchMessages = async () => {
+      setLoading(true); // Activer le préchargement
       try {
         const response = await fetch(`/api/conversation?recipientId=${id}`, {
           headers: {
@@ -30,18 +26,18 @@ const Conversation = () => {
         if (response.ok) {
           const data = await response.json();
           const formattedMessages = data.map((msg) => ({
-            text: msg.text || '',
-            sender: msg.sender || 'unknown',
+            text: msg.text || "",
+            sender: msg.sender || "unknown",
             timestamp: new Date(msg.timestamp), // Convertir le timestamp en objet Date
           }));
           setMessages(formattedMessages);
         } else {
-          console.error('Erreur lors de la récupération des messages');
+          console.error("Erreur lors de la récupération des messages");
         }
       } catch (error) {
-        console.error('Erreur:', error);
+        console.error("Erreur:", error);
       } finally {
-        setLoading(false);
+        setLoading(false); // Désactiver le préchargement
       }
     };
 
@@ -49,7 +45,7 @@ const Conversation = () => {
   }, [id, token]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -60,11 +56,11 @@ const Conversation = () => {
     if (!newMessage.trim()) return;
 
     try {
-      const response = await fetch('/api/message', {
-        method: 'POST',
+      const response = await fetch("/api/message", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           recipientId: id,
@@ -81,150 +77,188 @@ const Conversation = () => {
             timestamp: new Date(data.message.timestamp),
           },
         ]);
-        setNewMessage('');
+        setNewMessage("");
       } else {
-        console.error('Erreur lors de l\'envoi du message');
+        console.error("Erreur lors de l'envoi du message");
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error("Erreur:", error);
     }
   };
 
   return (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        padding: '16px',
-        boxSizing: 'border-box',
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        width: "100%",
+        boxSizing: "border-box",
+        padding: 2,
+        overflow: "hidden", // Empêche les débordements
+        animation: "slideIn 0.5s ease-in-out", // Ajout de l'animation
+        backgroundColor: "#f4f6f8",
       }}
     >
-      {/* Liste des messages */}
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '16px',
-          border: '1px solid #ccc',
-          borderRadius: '10px',
-          marginBottom: '16px',
-          backgroundColor: '#fafafa',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        }}
-      >
-        {loading ? (
-          <Typography>Chargement des messages...</Typography>
-        ) : messages.length > 0 ? (
-          messages.map((msg, index) => (
-            <Box
-              key={`${msg.sender}-${index}`}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems:
-                  msg.sender === currentUser?.username ? 'flex-end' : 'flex-start',
-                marginBottom: '10px',
-                animation: 'fadeIn 0.5s ease-in',
-                '@keyframes fadeIn': {
-                  '0%': { opacity: 0, transform: 'translateY(20px)' },
-                  '100%': { opacity: 1, transform: 'translateY(0)' },
-                },
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{
-                  fontSize: '0.75rem',
-                  color: msg.sender === currentUser?.username ? '#1976d2' : '#000',
-                  marginBottom: '5px',
-                }}
-              >
-                {msg.sender}
-              </Typography>
+      {!id ? (
+        <Typography variant="h6" color="error" align="center">
+          Aucune conversation sélectionnée
+        </Typography>
+      ) : (
+        <>
+          <Box
+            sx={{
+              padding: "10px 20px",
+              borderRadius: "8px",
+              background: "linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)", // Ajout du dégradé ici
+              color: "#fff",
+              marginBottom: 2,
+              textAlign: "center",
+              boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+              animation: "fadeIn 0.6s ease-in-out",
+            }}
+          >
+            <Typography variant="h6">
+              Conversation avec {id === currentUser?.username ? "Vous" : id}
+            </Typography>
+          </Box>
 
+
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto",
+              border: "1px solid #ccc",
+              borderRadius: "8px",
+              padding: "16px",
+              marginBottom: "16px",
+              backgroundColor: "#fff",
+              boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            {loading ? (
               <Box
                 sx={{
-                  backgroundColor:
-                    msg.sender === currentUser?.username ? '#1976d2' : '#e0e0e0',
-                  color: msg.sender === currentUser?.username ? '#fff' : '#000',
-                  padding: '12px',
-                  borderRadius: '16px',
-                  maxWidth: '70%',
-                  wordWrap: 'break-word',
-                  textAlign: 'left',
-                  boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
-                  transform: 'scale(1)',
-                  transition: 'transform 0.3s ease-in-out',
-                  ':hover': {
-                    transform: 'scale(1.05)',
-                  },
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "100%",
                 }}
               >
-                <Typography variant="body2">{msg.text}</Typography>
-                <Typography
-                  variant="caption"
+                <CircularProgress />
+              </Box>
+            ) : messages.length > 0 ? (
+              messages.map((msg, index) => (
+                <Box
+                  key={index}
                   sx={{
-                    fontSize: '0.75rem',
-                    display: 'block',
-                    textAlign: 'right',
-                    marginTop: '5px',
+                    textAlign: msg.sender === currentUser?.username ? "right" : "left",
+                    marginBottom: 3,
                   }}
                 >
-                  {msg.timestamp.toLocaleTimeString()}
-                </Typography>
-              </Box>
-            </Box>
-          ))
-        ) : (
-          <Typography>Aucun message dans cette conversation.</Typography>
-        )}
-        <div ref={messagesEndRef} />
-      </Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "#555",
+                      fontWeight: "bold",
+                      display: "block",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    {msg.sender}
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "inline-block",
+                      padding: "12px 20px",
+                      borderRadius: "20px",
+                      backgroundColor:
+                        msg.sender === currentUser?.username ? "#00796b" : "#e0e0e0",
+                      color: msg.sender === currentUser?.username ? "#fff" : "#000",
+                      maxWidth: "70%",
+                      wordWrap: "break-word",
+                      boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+                    }}
+                  >
+                    <Typography variant="body1">{msg.text}</Typography>
+                  </Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: "block",
+                      color: "#777",
+                      marginTop: "5px",
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    {msg.timestamp.toLocaleTimeString()}
+                  </Typography>
+                </Box>
+              ))
+            ) : (
+              <Typography color="textSecondary" align="center">
+                Aucun message pour le moment.
+              </Typography>
+            )}
+            <div ref={messagesEndRef} />
+          </Box>
 
-      {/* Zone de saisie */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          borderTop: '1px solid #ddd',
-          padding: '16px 0',
-        }}
-      >
-        <TextField
-          fullWidth
-          placeholder="Écrivez votre message..."
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          sx={{
-            marginRight: '10px',
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': {
-                borderColor: '#ccc',
-              },
-              '&:hover fieldset': {
-                borderColor: '#1976d2',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#1976d2',
-              },
-            },
-          }}
-        />
-        <Button
-          variant="contained"
-          sx={{
-            backgroundColor: '#1976d2',
-            color: '#fff',
-            ':hover': {
-              backgroundColor: '#005bb5',
-            },
-          }}
-          onClick={handleSendMessage}
-        >
-          Envoyer
-        </Button>
-      </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              borderTop: "1px solid #ddd",
+              padding: "16px 0",
+              backgroundColor: "#fff",
+              borderRadius: "8px",
+              boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <TextField
+              fullWidth
+              placeholder="Écrivez votre message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              sx={{
+                marginRight: "10px",
+                "& .MuiOutlinedInput-root": {
+                  "& fieldset": {
+                    borderColor: "#ccc",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#1976d2",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#1976d2",
+                  },
+                },
+              }}
+            />
+            <Button
+              variant="contained"
+              onClick={handleSendMessage}
+              sx={{
+                background: "linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)", // Ajout du dégradé
+                color: "#fff",
+                fontWeight: "bold",
+                fontSize: "0.9rem",
+                textTransform: "uppercase",
+                padding: "10px 20px",
+                borderRadius: "20px",
+                boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.2)",
+                transition: "all 0.3s ease",
+                ":hover": {
+                  background: "linear-gradient(90deg, #2575fc 0%, #6a11cb 100%)", // Inversion du dégradé au survol
+                  boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.3)",
+                },
+              }}
+              disabled={!newMessage.trim()}
+            >
+              Envoyer
+            </Button>
+          </Box>
+        </>
+      )}
     </Box>
   );
 };

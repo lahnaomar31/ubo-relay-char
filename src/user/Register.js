@@ -71,7 +71,10 @@ export const Register = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <Button type="submit" fullWidth variant="contained" color="primary" sx={{ mt: 2, mb: 2 }}>
+          <Button type="submit" fullWidth variant="contained" color="primary" sx={{ mt: 2, mb: 2 ,
+            background: "linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)",
+            color: "#fff",
+          }}>
             CRÉER UN COMPTE
           </Button>
         </form>
