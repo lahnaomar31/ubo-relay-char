@@ -1,21 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Box, Typography, TextField, Button, CircularProgress } from "@mui/material";
+import { Box, Typography, TextField, Button, CircularProgress, IconButton } from "@mui/material";
+import ImageIcon from "@mui/icons-material/Image"; // Import Material-UI Image icon
+import SendIcon from "@mui/icons-material/Send"; // Icone pour le bouton envoyer
 import "./App.css";
+import { put } from "@vercel/blob"; // Import Vercel Blob
 
 const Conversation = () => {
-  const { id } = useParams(); // ID de la conversation
+  const { id } = useParams(); // ID of the conversation
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true); // Indicateur de préchargement
-  const currentUser = JSON.parse(sessionStorage.getItem("user")); // Utilisateur connecté
-  const token = sessionStorage.getItem("token"); // Token d'authentification
-
-  const messagesEndRef = useRef(null); // Référence pour auto-scroll
+  const [loading, setLoading] = useState(true); // Loading indicator
+  const fileInputRef = useRef(null); // Initialize fileInputRef
+  const currentUser = JSON.parse(sessionStorage.getItem("user")); // Logged-in user
+  const token = sessionStorage.getItem("token"); // Authentication token
+  const [file, setFile] = useState(null); // File state
+  const messagesEndRef = useRef(null); // Reference for auto-scroll
 
   useEffect(() => {
     const fetchMessages = async () => {
-      setLoading(true); // Activer le préchargement
+      setMessages([]); // Clear messages when switching conversations
+      setLoading(true);
       try {
         const response = await fetch(`/api/conversation?recipientId=${id}`, {
           headers: {
@@ -27,17 +32,18 @@ const Conversation = () => {
           const data = await response.json();
           const formattedMessages = data.map((msg) => ({
             text: msg.text || "",
+            image: msg.image || null,
             sender: msg.sender || "unknown",
-            timestamp: new Date(msg.timestamp), // Convertir le timestamp en objet Date
+            timestamp: new Date(msg.timestamp),
           }));
           setMessages(formattedMessages);
         } else {
-          console.error("Erreur lors de la récupération des messages");
+          console.error("Error fetching messages.");
         }
       } catch (error) {
-        console.error("Erreur:", error);
+        console.error("Error:", error);
       } finally {
-        setLoading(false); // Désactiver le préchargement
+        setLoading(false);
       }
     };
 
@@ -53,36 +59,61 @@ const Conversation = () => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !file) {
+      console.error("No message text or file to send.");
+      return;
+    }
 
+    console.log("Sending message to recipientId:", id); // Log current recipientId
+
+  
     try {
+      let imageUrl = null;
+  
+      // Upload file if it exists
+      if (file) {
+        const blobResponse = await put(file.name, file, {
+          access: "public",
+          token: process.env.REACT_APP_BLOB_READ_WRITE_TOKEN, // Ensure this token is correctly set
+        });
+        imageUrl = blobResponse.url;
+      }
+  
+      const payload = {
+        recipientId: id,
+        message: newMessage.trim(),
+        image: imageUrl,
+      };
+  
+      console.log("Payload being sent:", JSON.stringify(payload, null, 2));
+  
       const response = await fetch("/api/message", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          recipientId: id,
-          message: newMessage,
-        }),
+        body: JSON.stringify(payload),
       });
-
+  
       if (response.ok) {
         const data = await response.json();
         setMessages((prevMessages) => [
           ...prevMessages,
           {
-            ...data.message,
+            text: data.message.text,
+            image: data.message.image,
+            sender: currentUser?.username,
             timestamp: new Date(data.message.timestamp),
           },
         ]);
-        setNewMessage("");
+        setNewMessage(""); // Reset message input
+        setFile(null); // Reset file input
       } else {
-        console.error("Erreur lors de l'envoi du message");
+        console.error("Error sending message:", response.statusText);
       }
     } catch (error) {
-      console.error("Erreur:", error);
+      console.error("Error:", error);
     }
   };
 
@@ -95,8 +126,7 @@ const Conversation = () => {
         width: "100%",
         boxSizing: "border-box",
         padding: 2,
-        overflow: "hidden", // Empêche les débordements
-        animation: "slideIn 0.5s ease-in-out", // Ajout de l'animation
+        overflow: "hidden",
         backgroundColor: "#f4f6f8",
       }}
     >
@@ -110,19 +140,17 @@ const Conversation = () => {
             sx={{
               padding: "10px 20px",
               borderRadius: "8px",
-              background: "linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)", // Ajout du dégradé ici
+              background: "linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)",
               color: "#fff",
               marginBottom: 2,
               textAlign: "center",
               boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
-              animation: "fadeIn 0.6s ease-in-out",
             }}
           >
             <Typography variant="h6">
               Conversation avec {id === currentUser?.username ? "Vous" : id}
             </Typography>
           </Box>
-
 
           <Box
             sx={{
@@ -158,30 +186,34 @@ const Conversation = () => {
                 >
                   <Typography
                     variant="caption"
-                    sx={{
-                      color: "#555",
-                      fontWeight: "bold",
-                      display: "block",
-                      marginBottom: "4px",
-                    }}
+                    sx={{ color: "#555", fontWeight: "bold", marginBottom: "4px" }}
                   >
                     {msg.sender}
                   </Typography>
-                  <Box
-                    sx={{
-                      display: "inline-block",
-                      padding: "12px 20px",
-                      borderRadius: "20px",
-                      backgroundColor:
-                        msg.sender === currentUser?.username ? "#00796b" : "#e0e0e0",
-                      color: msg.sender === currentUser?.username ? "#fff" : "#000",
-                      maxWidth: "70%",
-                      wordWrap: "break-word",
-                      boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    <Typography variant="body1">{msg.text}</Typography>
-                  </Box>
+                  {msg.text && (
+                    <Box
+                      sx={{
+                        display: "inline-block",
+                        padding: "12px 20px",
+                        borderRadius: "20px",
+                        backgroundColor:
+                          msg.sender === currentUser?.username ? "#00796b" : "#e0e0e0",
+                        color: msg.sender === currentUser?.username ? "#fff" : "#000",
+                        maxWidth: "70%",
+                        wordWrap: "break-word",
+                        boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+                      }}
+                    >
+                      <Typography variant="body1">{msg.text}</Typography>
+                    </Box>
+                  )}
+                  {msg.image && (
+                    <img
+                      src={msg.image}
+                      alt="Uploaded content"
+                      style={{ maxWidth: "300px", borderRadius: "8px", marginTop: "8px" }}
+                    />
+                  )}
                   <Typography
                     variant="caption"
                     sx={{
@@ -219,42 +251,39 @@ const Conversation = () => {
               placeholder="Écrivez votre message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
+              sx={{ marginRight: "10px" }}
+            />
+            <IconButton
+              color="primary"
+              onClick={() => fileInputRef.current.click()} // Trigger file input dialog
               sx={{
+                background: "#fff",
+                boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.2)",
                 marginRight: "10px",
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": {
-                    borderColor: "#ccc",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "#1976d2",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#1976d2",
-                  },
-                },
               }}
+            >
+            <ImageIcon />
+            </IconButton>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => setFile(e.target.files[0])}
             />
             <Button
               variant="contained"
               onClick={handleSendMessage}
               sx={{
-                background: "linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)", // Ajout du dégradé
+                background: "linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)",
                 color: "#fff",
-                fontWeight: "bold",
-                fontSize: "0.9rem",
-                textTransform: "uppercase",
                 padding: "10px 20px",
                 borderRadius: "20px",
-                boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.2)",
-                transition: "all 0.3s ease",
-                ":hover": {
-                  background: "linear-gradient(90deg, #2575fc 0%, #6a11cb 100%)", // Inversion du dégradé au survol
-                  boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.3)",
-                },
               }}
-              disabled={!newMessage.trim()}
+              disabled={!newMessage.trim() && !file}
+              startIcon={<SendIcon />}
             >
-              Envoyer
+              Send
             </Button>
           </Box>
         </>

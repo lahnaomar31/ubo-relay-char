@@ -10,13 +10,20 @@ export default async (req, res) => {
       return res.status(401).json({ error: "User not connected" });
     }
 
-    const { roomId, message } = req.body;
-    if (!roomId || !message) {
-      return res.status(400).json({ error: "roomId and message are required" });
+    // Déboguer les données reçues
+    console.log("Request Body:", req.body);
+
+    const { roomId, message, image } = req.body;
+    if (!roomId) {
+      return res.status(400).json({ error: "roomId is required" });
+    }
+    if (!message && !image) {
+      return res.status(400).json({ error: "message or image is required" });
     }
 
     const newMessage = {
       text: message,
+      image: image || null, // Inclure l'image dans le message
       sender: user.username,
       timestamp: new Date().toISOString(),
     };

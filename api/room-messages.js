@@ -24,17 +24,19 @@ export default async (req, res) => {
         return res.status(404).json({ error: "No messages found for this room" });
       }
 
-      const parsedMessages = rawMessages.map((msg) => {
-        if(typeof msg==='string'){
-        try {
-          return JSON.parse(msg); // Convertir JSON string en objet
-        } catch (parseError) {
-          console.error("Invalid JSON in Redis, skipping message:", msg);
-          return null; // Ignorer les messages corrompus
+      const parsedMessages = rawMessages
+      .map((msg) => {
+        if (typeof msg === "string") {
+          try {
+            return JSON.parse(msg); // Convertir JSON string en objet
+          } catch (parseError) {
+            console.error("Invalid JSON in Redis, skipping message:", msg);
+            return null; // Ignorer les messages corrompus
+          }
         }
-    }
-        return msg;
-      }).filter(Boolean); // Supprimer les messages invalides
+        return msg; // Si déjà un objet, le retourner tel quel
+      })
+      .filter(Boolean); // Supprimer les messages invalides
 
       res.status(200).json(parsedMessages);
     } catch (redisError) {

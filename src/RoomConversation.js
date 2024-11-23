@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Box, Typography, TextField, Button, CircularProgress } from "@mui/material";
+import { Box, Typography, TextField, Button, CircularProgress, IconButton } from "@mui/material";
+import ImageIcon from "@mui/icons-material/Image"; // Import Material-UI Image icon
+import SendIcon from "@mui/icons-material/Send"; // Icone pour le bouton envoyer
 import "./App.css";
+import { put } from "@vercel/blob"; // Import Vercel Blob
+
 
 const RoomConversation = () => {
   const { id } = useParams(); // ID du salon
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true); // Indicateur de préchargement
+  const fileInputRef = useRef(null); // Initialize fileInputRef
+  const [file, setFile] = useState(null); // File upload state
   const currentUser = JSON.parse(sessionStorage.getItem("user")); // Utilisateur connecté
   const token = sessionStorage.getItem("token"); // Token d'authentification
 
@@ -28,6 +34,7 @@ const RoomConversation = () => {
           const data = await response.json();
           const formattedMessages = data.map((msg) => ({
             text: msg.text || "",
+            image: msg.image || null, // Inclure l'image si elle existe
             sender: msg.sender || "unknown",
             timestamp: new Date(msg.timestamp), // Convertir le timestamp en objet Date
           }));
@@ -53,20 +60,42 @@ const RoomConversation = () => {
     scrollToBottom();
   }, [messages]); // Auto-scroll à chaque mise à jour des messages
 
+
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !file){
+      console.error("No message or file to send.");
+      return;
+    } 
 
     try {
+      let imageUrl = null;
+  
+      // Si un fichier est sélectionné, téléchargez-le
+      if (file) {
+        const blobResponse = await put(file.name, file, {
+          access: "public",
+          token: process.env.REACT_APP_BLOB_READ_WRITE_TOKEN, // Assurez-vous que le token est configuré
+        });
+        imageUrl = blobResponse.url; // Obtenez l'URL publique du fichier
+        console.log("Image URL:", imageUrl); // Vérifiez que l'URL de l'image est correcte
+      }
+  
+      const payload = {
+        roomId: id,
+        message: newMessage.trim(),
+        image: imageUrl, // Inclure l'URL de l'image si elle existe
+      };
+
+      console.log("Payload being sent:", JSON.stringify(payload, null, 2));
+    
+
       const response = await fetch("/api/send-room-message", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          roomId: id, // ID du salon
-          message: newMessage,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -74,13 +103,18 @@ const RoomConversation = () => {
         setMessages((prevMessages) => [
           ...prevMessages,
           {
-            ...data.message,
+            text: data.message.text,
+            image: data.message.image,
+            sender: currentUser?.username,
             timestamp: new Date(data.message.timestamp),
           },
         ]);
         setNewMessage("");
+        setFile(null); // Réinitialiser l'entrée de fichier
+
       } else {
-        console.error("Erreur lors de l'envoi du message.");
+        const error = await response.json();
+        console.error("Erreur lors de l'envoi du message :", error.error || response.statusText);
       }
     } catch (error) {
       console.error("Erreur:", error);
@@ -167,21 +201,30 @@ const RoomConversation = () => {
                   >
                     {msg.sender}
                   </Typography>
-                  <Box
-                    sx={{
-                      display: "inline-block",
-                      padding: "12px 20px",
-                      borderRadius: "20px",
-                      backgroundColor:
-                        msg.sender === currentUser?.username ? "#00796b" : "#e0e0e0",
-                      color: msg.sender === currentUser?.username ? "#fff" : "#000",
-                      maxWidth: "70%",
-                      wordWrap: "break-word",
-                      boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)", // Ombre douce
-                    }}
-                  >
-                    <Typography variant="body1">{msg.text}</Typography>
-                  </Box>
+                  {msg.text && (
+                    <Box
+                      sx={{
+                        display: "inline-block",
+                        padding: "12px 20px",
+                        borderRadius: "20px",
+                        backgroundColor:
+                          msg.sender === currentUser?.username ? "#00796b" : "#e0e0e0",
+                        color: msg.sender === currentUser?.username ? "#fff" : "#000",
+                        maxWidth: "70%",
+                        wordWrap: "break-word",
+                        boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+                      }}
+                    >
+                      <Typography variant="body1">{msg.text}</Typography>
+                    </Box>
+                  )}
+                  {msg.image && (
+                    <img
+                      src={msg.image}
+                      alt="Uploaded content"
+                      style={{ maxWidth: "300px", borderRadius: "8px", marginTop: "8px" }}
+                    />
+                  )}
                   <Typography
                     variant="caption"
                     sx={{
@@ -191,7 +234,7 @@ const RoomConversation = () => {
                       fontSize: "0.8rem",
                     }}
                   >
-                    {msg.timestamp.toLocaleTimeString()}
+                    {new Date(msg.timestamp).toLocaleTimeString()}
                   </Typography>
                 </Box>
               ))
@@ -215,6 +258,7 @@ const RoomConversation = () => {
               boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
             }}
           >
+
             <TextField
               fullWidth
               placeholder="Écrivez votre message..."
@@ -235,6 +279,25 @@ const RoomConversation = () => {
                 },
               }}
             />
+            <IconButton
+              color="primary"
+              onClick={() => fileInputRef.current.click()} // Trigger file input dialog
+              sx={{
+                background: "#fff",
+                boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.2)",
+                marginRight: "10px",
+              }}
+            >
+              <ImageIcon />
+            </IconButton>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => setFile(e.target.files[0])}
+            />
+
             <Button
               variant="contained"
               onClick={handleSendMessage}
@@ -253,9 +316,10 @@ const RoomConversation = () => {
                   boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.3)",
                 },
               }}
-              disabled={!newMessage.trim()}
-            >
-              Envoyer
+              disabled={!newMessage.trim() && !file}
+              startIcon={<SendIcon />}
+              >
+              Send
             </Button>
           </Box>
         </>

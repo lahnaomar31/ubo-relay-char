@@ -4,28 +4,33 @@ import { Redis } from "@upstash/redis";
 const redis = Redis.fromEnv();
 
 export default async (req, res) => {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+
   try {
     const user = await getConnecterUser(req);
     if (!user) {
       return res.status(401).json({ error: "User not connected" });
     }
 
-    const { recipientId, message } = req.body;
-    if (!recipientId || !message) {
-      return res.status(400).json({ error: "Invalid request data" });
+    const { recipientId, message, image } = req.body;
+    if (!recipientId || (!message && !image)) {
+      return res.status(400).json({ error: "Invalid request data. 'recipientId' and at least 'message' or 'image' are required." });
     }
 
     const conversationId = generateConversationId(user.id, recipientId);
 
     const newMessage = {
-      text: message,
+      text: message || "",
+      image: image || null,
       sender: user.username,
       timestamp: new Date().toISOString(),
     };
 
     try {
       const serializedMessage = JSON.stringify(newMessage);
-      console.log("Serialized message being stored in Redis:", serializedMessage); // Log avant stockage
       await redis.rpush(`conversation:${conversationId}`, serializedMessage);
 
       res.status(201).json({ success: true, message: newMessage });
@@ -40,5 +45,5 @@ export default async (req, res) => {
 };
 
 function generateConversationId(userId1, userId2) {
-  return [userId1, userId2].sort().join('-');
+  return [userId1, userId2].sort().join("-");
 }
